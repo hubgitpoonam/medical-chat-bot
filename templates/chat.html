@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Medical ChatBot</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="chat-header">
+        <div class="icon">🩺</div>
+        <div>
+            <h2>Medical ChatBot</h2>
+            <p>Ask me about symptoms, conditions &amp; treatments</p>
+        </div>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+        <div class="message bot">
+            <div class="avatar">🩺</div>
+            <div class="bubble">Hello! I'm your Medical Assistant. How can I help you today?</div>
+        </div>
+    </div>
+
+    <div class="chat-input">
+        <input
+            type="text"
+            id="userInput"
+            placeholder="Type your medical question..."
+            autocomplete="off"
+        />
+        <button onclick="sendMessage()" title="Send">&#10148;</button>
+    </div>
+</div>
+
+<script>
+    const chatMessages = document.getElementById("chatMessages");
+    const userInput   = document.getElementById("userInput");
+
+    userInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") sendMessage();
+    });
+
+    function scrollToBottom() {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function appendMessage(role, text) {
+        const msg    = document.createElement("div");
+        msg.className = "message " + role;
+
+        const avatar = document.createElement("div");
+        avatar.className = "avatar";
+        avatar.textContent = role === "bot" ? "🩺" : "👤";
+
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+        bubble.textContent = text;
+
+        msg.appendChild(avatar);
+        msg.appendChild(bubble);
+        chatMessages.appendChild(msg);
+        scrollToBottom();
+    }
+
+    function showTyping() {
+        const msg    = document.createElement("div");
+        msg.className = "message bot typing-indicator";
+        msg.id        = "typingIndicator";
+
+        const avatar = document.createElement("div");
+        avatar.className = "avatar";
+        avatar.textContent = "🩺";
+
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+        bubble.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+
+        msg.appendChild(avatar);
+        msg.appendChild(bubble);
+        chatMessages.appendChild(msg);
+        scrollToBottom();
+    }
+
+    function removeTyping() {
+        const indicator = document.getElementById("typingIndicator");
+        if (indicator) indicator.remove();
+    }
+
+    function sendMessage() {
+        const text = userInput.value.trim();
+        if (!text) return;
+
+        appendMessage("user", text);
+        userInput.value = "";
+        showTyping();
+
+        fetch("/get", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: "msg=" + encodeURIComponent(text)
+        })
+        .then(res => res.text())
+        .then(data => {
+            removeTyping();
+            appendMessage("bot", data);
+        })
+        .catch(() => {
+            removeTyping();
+            appendMessage("bot", "Sorry, something went wrong. Please try again.");
+        });
+    }
+</script>
+
+</body>
+</html>
